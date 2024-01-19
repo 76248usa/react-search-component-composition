@@ -74,7 +74,7 @@ function Star({ onClick, full, onHoverIn, onHoverOut, color, size }) {
 }
 
 export default function StarRating({
-  maxRating = 5,
+  maxRating = 0,
   color = "#fcc419",
   size = 48,
   messages = [],
@@ -92,7 +92,7 @@ export default function StarRating({
   return (
     <div style={containerStyle}>
       <div style={starContainerStyle}>
-        {Array.from({ length: 5 }, (_, i) => (
+        {Array.from({ length: 10 }, (_, i) => (
           <Star
             key={i}
             full={tempRating ? tempRating >= i + 1 : rating >= i + 1}

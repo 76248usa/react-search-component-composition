@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Star from "./star";
+//import { useMovies } from "./useMovies";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -8,15 +9,22 @@ const KEY = "f3e53ded";
 
 export default function App() {
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
+  //const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(() => {
+    const storedValue = localStorage.getItem("watched");
+    return JSON.parse(storedValue);
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   //const tempQuery = "interstellar";
 
+  //const { movies, isLoading, error } = useMovies();
+
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
+    //localStorage.setItem("watched", JSON.stringify([...watched, movie]));
   }
 
   function handleSelectMovie(id) {
@@ -26,6 +34,11 @@ export default function App() {
 
   function handleCloseMovie() {
     setSelectedId(null);
+  }
+
+  function removeMovie(id) {
+    // watched.filter((movie) => movie !== movie.imdbID);
+    setWatched((watched) => watched.filter((movie) => movie.imdbID !== id));
   }
 
   useEffect(() => {
@@ -59,6 +72,10 @@ export default function App() {
     fetchMovies();
   }, [query]);
 
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
+
   return (
     <>
       <NavBar>
@@ -85,7 +102,7 @@ export default function App() {
               />
             )}
             <WatchedSummary watched={watched} />
-            <WatchedMoviesList watched={watched} />
+            <WatchedMoviesList watched={watched} removeMovie={removeMovie} />
           </>
         </Box>
       </Main>
@@ -125,6 +142,19 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+  useEffect(() => {
+    function callback(e) {
+      if (e.code === "Enter") {
+        inputEl.current.focus();
+        setQuery(" ");
+      }
+    }
+    document.addEventListener("keydown", callback);
+    return () => document.addEventListener("keydown", callback);
+    //console.log(inputEl.current);
+  }, [setQuery]);
+
   return (
     <input
       className="search"
@@ -132,6 +162,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={(e) => setQuery(e.target.value)}
+      ref={inputEl}
     />
   );
 }
@@ -295,35 +326,49 @@ function WatchedSummary({ watched }) {
   );
 }
 
-function WatchedMoviesList({ watched }) {
+function WatchedMoviesList({ watched, removeMovie }) {
   return (
     <ul className="list">
       {watched.map((movie) => (
-        <WatchedMovie movie={movie} key={movie.imdbID} />
+        <WatchedMovie
+          movie={movie}
+          key={movie.imdbID}
+          watched={watched}
+          removeMovie={removeMovie}
+        />
       ))}
     </ul>
   );
 }
 
-function WatchedMovie({ movie }) {
+function WatchedMovie({ movie, watched, removeMovie }) {
   return (
-    <li>
-      <img src={movie.poster} alt={`${movie.title} poster`} />
-      <h3>{movie.title}</h3>
-      <div>
-        <p>
-          <span>⭐️</span>
-          <span>{movie.imdbRating}</span>
-        </p>
-        <p>
-          <span>🌟</span>
-          <span>{movie.userRating}</span>
-        </p>
-        <p>
-          <span>⏳</span>
-          <span>{movie.runtime} min</span>
-        </p>
-      </div>
-    </li>
+    <>
+      <li>
+        <img src={movie.poster} alt={`${movie.title} poster`} />
+        <h3>{movie.title}</h3>
+        <div>
+          <p>
+            <span>⭐️</span>
+            <span>{movie.imdbRating}</span>
+          </p>
+          <p>
+            <span>🌟</span>
+            <span>{movie.userRating}</span>
+          </p>
+          <p>
+            <span>⏳</span>
+            <span>{movie.runtime} min</span>
+          </p>
+
+          <button
+            className="btn-delete"
+            onClick={() => removeMovie(movie.imdbID)}
+          >
+            X
+          </button>
+        </div>
+      </li>
+    </>
   );
 }
